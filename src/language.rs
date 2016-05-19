@@ -2,6 +2,7 @@ use cgmath;
 use prelude::*;
 use vertex;
 
+#[derive(Debug, Clone, Copy)]
 pub enum Transform {
   Translate(f32, f32),
   Rotate(f32),
@@ -37,6 +38,7 @@ impl Transform {
 
 pub use self::Transform::*;
 
+#[derive(Debug, Clone)]
 pub enum Inner {
   WithTransforms(Vec<Transform>, T),
   Line(Point, Point),
