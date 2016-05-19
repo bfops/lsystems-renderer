@@ -11,6 +11,7 @@ mod language;
 mod main;
 mod prelude;
 mod pythagoras_tree;
+mod fractal_plant;
 mod vertex;
 
 fn main() {

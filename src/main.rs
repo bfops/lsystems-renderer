@@ -1,9 +1,10 @@
 use glium;
 use glutin;
 use rand;
+use std;
 
+use fractal_plant;
 use language;
-use pythagoras_tree;
 
 pub const WINDOW_WIDTH: u32 = 800;
 pub const WINDOW_HEIGHT: u32 = 800;
@@ -41,8 +42,13 @@ pub fn main() {
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
     let mut vertices = Vec::new();
-    let transform = language::Translate(0.0, -1.0).to_matrix();
-    pythagoras_tree::new(8).render(&transform, &mut vertices);
+    let transform =
+      language::Seq(vec!(
+        language::Translate(-0.8, -0.8),
+        language::Scale(0.3),
+        language::Rotate(-std::f32::consts::PI * 25.0 / 180.0),
+      )).to_matrix();
+    fractal_plant::new(8).render(&transform, &mut vertices);
     let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
 
     let program =
