@@ -38,18 +38,19 @@ impl Transform {
 
 pub use self::Transform::*;
 
+pub type Many = Vec<T>;
+
 #[derive(Debug, Clone)]
-pub enum Inner {
-  WithTransforms(Vec<Transform>, T),
+pub enum T {
+  WithTransforms(Vec<Transform>, Many),
   Line(Point, Point),
+  All(Many),
 }
 
-pub use self::Inner::*;
+pub use self::T::*;
 
-pub type T = Vec<Inner>;
-
-impl Inner {
-  fn render(&self, transform: &Matrix, vertices: &mut Vec<vertex::T>) {
+impl T {
+  pub fn render(&self, transform: &Matrix, vertices: &mut Vec<vertex::T>) {
     match self {
       &WithTransforms(ref transforms, ref t) => {
         let mut transform = transform.clone();
@@ -66,14 +67,11 @@ impl Inner {
         vertices.push(vertex::T { position: [p1.x, p1.y] });
         vertices.push(vertex::T { position: [p2.x, p2.y] });
       },
+      &All(ref many) => {
+        for t in many {
+          t.render(transform, vertices);
+        }
+      },
     }
   }
-}
-
-pub fn render(t: &T, transform: &Matrix) -> Vec<vertex::T> {
-  let mut vertices = Vec::new();
-  for t in t {
-    t.render(transform, &mut vertices);
-  }
-  vertices
 }

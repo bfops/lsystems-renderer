@@ -40,8 +40,9 @@ pub fn main() {
     let mut target = window.draw();
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
+    let mut vertices = Vec::new();
     let transform = language::Translate(0.0, -1.0).to_matrix();
-    let vertices = language::render(&pythagoras_tree::new(8), &transform);
+    pythagoras_tree::new(8).render(&transform, &mut vertices);
     let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
 
     let program =
