@@ -2,11 +2,12 @@ use cgmath;
 use prelude::*;
 use vertex;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Transform {
   Translate(f32, f32),
   Rotate(f32),
   Scale(f32),
+  Seq(Vec<Transform>),
 }
 
 impl Transform {
@@ -32,6 +33,13 @@ impl Transform {
         transform.z.z = 1.0;
         transform
       },
+      &Seq(ref ts) => {
+        let mut transform = cgmath::SquareMatrix::from_value(1.0);
+        for t in ts {
+          transform = transform * t.to_matrix();
+        }
+        transform
+      },
     }
   }
 }
@@ -42,7 +50,7 @@ pub type Many = Vec<T>;
 
 #[derive(Debug, Clone)]
 pub enum T {
-  WithTransforms(Vec<Transform>, Many),
+  WithTransform(Transform, Many),
   Line(Point, Point),
   All(Many),
 }
@@ -52,11 +60,8 @@ pub use self::T::*;
 impl T {
   pub fn render(&self, transform: &Matrix, vertices: &mut Vec<vertex::T>) {
     match self {
-      &WithTransforms(ref transforms, ref t) => {
-        let mut transform = transform.clone();
-        for t in transforms {
-          transform = transform * t.to_matrix();
-        }
+      &WithTransform(ref new_transform, ref t) => {
+        let transform = transform * new_transform.to_matrix();
         for inner in t {
           inner.render(&transform, vertices);
         }
