@@ -10,7 +10,7 @@ extern crate time;
 mod language;
 mod main;
 mod prelude;
-mod tree;
+mod pythagoras_tree;
 mod vertex;
 
 fn main() {

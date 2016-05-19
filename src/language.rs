@@ -68,11 +68,10 @@ impl Inner {
   }
 }
 
-pub fn render(t: &T) -> Vec<vertex::T> {
+pub fn render(t: &T, transform: &Matrix) -> Vec<vertex::T> {
   let mut vertices = Vec::new();
-  let transform = cgmath::SquareMatrix::from_value(1.0);
   for t in t {
-    t.render(&transform, &mut vertices);
+    t.render(transform, &mut vertices);
   }
   vertices
 }

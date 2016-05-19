@@ -3,7 +3,7 @@ use glutin;
 use rand;
 
 use language;
-use tree;
+use pythagoras_tree;
 
 pub const WINDOW_WIDTH: u32 = 800;
 pub const WINDOW_HEIGHT: u32 = 800;
@@ -40,7 +40,8 @@ pub fn main() {
     let mut target = window.draw();
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
-    let vertices = language::render(&tree::new(8));
+    let transform = language::Translate(0.0, -1.0).to_matrix();
+    let vertices = language::render(&pythagoras_tree::new(8), &transform);
     let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
 
     let program =
