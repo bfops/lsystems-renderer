@@ -1,9 +1,15 @@
 /// https://en.wikipedia.org/wiki/L-system#Example_7:_Fractal_plant
 
-use std;
+#[macro_use]
+extern crate glium;
+extern crate glutin;
+extern crate lsystem_renderer;
+
+mod main;
+mod prelude;
 
 use prelude::*;
-use language::*;
+use lsystem_renderer::language::*;
 
 fn line() -> T {
   Line(Point::new(0.0, 0.0), Point::new(0.0, 1.0))
@@ -26,7 +32,6 @@ fn x(depth: u32) -> T {
     return All(vec!())
   }
 
-  let len = (1 << depth) as f32;
   let recurse = || {
     WithTransform(
       Scale(0.5),
@@ -73,3 +78,12 @@ pub fn new(depth: u32) -> T {
   x(depth)
 }
 
+pub fn main() {
+  let transform =
+    Seq(vec!(
+      Translate(-0.8, -0.8),
+      Scale(0.3),
+      Rotate(-std::f32::consts::PI * 25.0 / 180.0),
+    )).to_matrix();
+  main::run(&transform, new(8))
+}

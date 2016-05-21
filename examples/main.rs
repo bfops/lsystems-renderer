@@ -1,15 +1,15 @@
+extern crate rand;
+extern crate lsystem_renderer;
+
 use glium;
 use glutin;
-use rand;
-use std;
+use prelude::*;
+use lsystem_renderer::language;
 
-use fractal_plant;
-use language;
+const WINDOW_WIDTH: u32 = 800;
+const WINDOW_HEIGHT: u32 = 800;
 
-pub const WINDOW_WIDTH: u32 = 800;
-pub const WINDOW_HEIGHT: u32 = 800;
-
-pub fn main() {
+pub fn run(transform: &Matrix, t: language::T) {
   use glium::DisplayBuild;
 
   let window =
@@ -42,13 +42,7 @@ pub fn main() {
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
     let mut vertices = Vec::new();
-    let transform =
-      language::Seq(vec!(
-        language::Translate(-0.8, -0.8),
-        language::Scale(0.3),
-        language::Rotate(-std::f32::consts::PI * 25.0 / 180.0),
-      )).to_matrix();
-    fractal_plant::new(8).render(&transform, &mut vertices);
+    t.render(&transform, &mut vertices);
     let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
 
     let program =

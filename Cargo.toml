@@ -11,9 +11,9 @@ rpath = false           # Controls whether the compiler passes `-C rpath`
 lto = false             # Controls `-C lto` for binaries and staticlibs
 debug-assertions = true # Controls whether debug assertions are enabled
 
-[[bin]]
+[lib]
 
-name = "lsystem-renderer"
+name = "lsystem_renderer"
 path = "./src/mod.rs"
 
 [dependencies]
