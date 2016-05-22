@@ -3,10 +3,9 @@ extern crate glium;
 extern crate glutin;
 extern crate lsystem_renderer;
 
-mod main;
-mod prelude;
+mod support;
 
-use prelude::*;
+use support::prelude::*;
 use lsystem_renderer::language::*;
 
 pub fn new(depth: u32) -> T {
@@ -37,5 +36,5 @@ pub fn main() {
     Seq(vec!(
       Translate(0.0, -1.0),
     )).to_matrix();
-  main::run(&transform, new(8))
+  support::main(&transform, new(8))
 }

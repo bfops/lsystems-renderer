@@ -5,10 +5,9 @@ extern crate glium;
 extern crate glutin;
 extern crate lsystem_renderer;
 
-mod main;
-mod prelude;
+mod support;
 
-use prelude::*;
+use support::prelude::*;
 use lsystem_renderer::language::*;
 
 fn line() -> T {
@@ -85,5 +84,5 @@ pub fn main() {
       Scale(0.3),
       Rotate(-std::f32::consts::PI * 25.0 / 180.0),
     )).to_matrix();
-  main::run(&transform, new(8))
+  support::main(&transform, new(8))
 }

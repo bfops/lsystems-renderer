@@ -1,15 +1,18 @@
 extern crate rand;
 extern crate lsystem_renderer;
 
+pub mod prelude;
+
+use self::prelude::*;
+
 use glium;
 use glutin;
-use prelude::*;
 use lsystem_renderer::language;
 
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 800;
 
-pub fn run(transform: &Matrix, t: language::T) {
+pub fn main(transform: &Matrix, t: language::T) {
   use glium::DisplayBuild;
 
   let window =
