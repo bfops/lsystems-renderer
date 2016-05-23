@@ -6,7 +6,7 @@ extern crate lsystem_renderer;
 mod support;
 
 use support::prelude::*;
-use lsystem_renderer::language::*;
+use lsystem_renderer::language;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TextureId {
@@ -53,37 +53,56 @@ impl support::Texture for TextureId {
   }
 }
 
-fn new(depth: u32) -> T<TextureId> {
-  if depth == 0 {
-    All(vec!())
-  } else {
-    All(vec!(
-      DrawTexture {
-        texture_id: TextureId::Wood,
-        texture_bounds: (Point::new(-1.0, -1.0), Vector::new(2.0, 2.0)),
-        screen_bounds: (Point::new(-0.1, 0.0), Vector::new(0.2, 1.0)),
-      },
-      WithTransform(
-        Translate(0.0, 1.0),
-        vec!(
-          WithTransform(
-            Seq(vec!(Rotate( std::f32::consts::PI / 4.0), Scale(0.5))),
-            vec!(new(depth - 1)),
-          ),
-          WithTransform(
-            Seq(vec!(Rotate(-std::f32::consts::PI / 4.0), Scale(0.5))),
-            vec!(new(depth - 1)),
-          ),
-        ),
-      ),
-    ))
+fn new() -> language::T<TextureId> {
+  let s = language::Nonterminal(0);
+  let l = language::Nonterminal(1);
+  let r = language::Nonterminal(2);
+
+  let add_branch = || {
+    language::Terminal::AddBranch {
+      texture_id : TextureId::Wood,
+      width      : 0.2,
+      length      : 1.0,
+    }
+  };
+
+  let rotate = |degrees: f32| {
+    language::Terminal::Transform(
+      language::Transform {
+        rotation : std::f32::consts::PI * degrees / 180.0,
+        scale    : Vector::new(1.0, 1.0),
+      }
+    )
+  };
+
+  let scale = |s| {
+    language::Terminal::Transform(
+      language::Transform {
+        rotation : 0.0,
+        scale    : Vector::new(s, s),
+      }
+    )
+  };
+
+  let rules =
+    vec!(
+      (s, vec!(add_branch()),              vec!(l, r)),
+      (l, vec!(scale(0.5), rotate( 45.0)), vec!(s)),
+      (r, vec!(scale(0.5), rotate(-45.0)), vec!(s)),
+    );
+  let rules =
+    std::iter::FromIterator::from_iter(
+      rules
+      .into_iter()
+      .map(|(nt, actions, next)| (nt, language::RHS { actions: actions, next: next }))
+    );
+
+  language::T {
+    rules: rules,
   }
 }
 
 pub fn main() {
-  let transform =
-    Seq(vec!(
-      Translate(0.0, -1.0),
-    )).to_matrix();
-  support::main(&transform, new(8))
+  let transform = language::translate(&Vector::new(0.0, -1.0));
+  support::main(&transform, new())
 }

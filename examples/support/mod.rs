@@ -49,9 +49,7 @@ pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matri
     let mut target = window.draw();
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
-    let mut vertices = lsystem_renderer::vertices::new();
-    t.render(&transform, &mut vertices);
-    let vertices = vertices.to_hashmap();
+    let vertices = language::render(&t, 8, &transform).to_hashmap();
 
     for (texture_id, vertices) in &vertices {
       let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();

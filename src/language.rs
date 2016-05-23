@@ -1,3 +1,7 @@
+//! This module implements languages/grammars/words with rules of the form
+///   Nonterminal -> Terminal Nonterminal*
+/// Every Nonterminal should appear on the left hand side of no more than one rule.
+
 use cgmath;
 use std;
 
@@ -5,100 +9,122 @@ use prelude::*;
 use vertex;
 use vertices;
 
+pub fn translate(v: &Vector) -> Matrix {
+  let mut transform: Matrix = cgmath::SquareMatrix::from_value(1.0);
+  transform.z.x = v.x;
+  transform.z.y = v.y;
+  transform
+}
+
 #[derive(Debug, Clone)]
-pub enum Transform {
-  Translate(f32, f32),
-  Rotate(f32),
-  Scale(f32),
-  Seq(Vec<Transform>),
+pub struct Transform {
+  pub rotation : f32,
+  pub scale    : Vector,
 }
 
 impl Transform {
   pub fn to_matrix(&self) -> Matrix {
-    match self {
-      &Translate(x, y) => {
-        let mut transform: Matrix = cgmath::SquareMatrix::from_value(1.0);
-        transform.z.x = x;
-        transform.z.y = y;
-        transform
-      },
-      &Rotate(angle) => {
-        let mut transform: Matrix = cgmath::SquareMatrix::from_value(1.0);
-        let (s, c) = angle.sin_cos();
-        transform.x.x = c;
-        transform.x.y = s;
-        transform.y.x = -s;
-        transform.y.y = c;
-        transform
-      },
-      &Scale(s) => {
-        let mut transform: Matrix = cgmath::SquareMatrix::from_value(s);
-        transform.z.z = 1.0;
-        transform
-      },
-      &Seq(ref ts) => {
-        let mut transform = cgmath::SquareMatrix::from_value(1.0);
-        for t in ts {
-          transform = transform * t.to_matrix();
-        }
-        transform
-      },
-    }
+    let mut scale: Matrix = cgmath::SquareMatrix::from_value(1.0);
+    scale.x.x = self.scale.x;
+    scale.y.y = self.scale.y;
+
+    let mut rotate: Matrix = cgmath::SquareMatrix::from_value(1.0);
+    let (s, c) = self.rotation.sin_cos();
+    rotate.x.x = c;
+    rotate.x.y = s;
+    rotate.y.x = -s;
+    rotate.y.y = c;
+
+    rotate * scale
   }
 }
 
-pub use self::Transform::*;
+/// The terminals in this alphabet. These represent actions with possible side effects!
+#[derive(Debug, Clone)]
+pub enum Terminal<TextureId> {
+  Transform(Transform),
+  AddBranch {
+    texture_id : TextureId,
+    width      : f32,
+    length     : f32,
+  },
+}
 
-pub type Many<TextureId> = Vec<T<TextureId>>;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Nonterminal(pub u32);
 
 #[derive(Debug, Clone)]
-pub enum T<TextureId> {
-  WithTransform(Transform, Many<TextureId>),
-  DrawTexture {
-    texture_id     : TextureId,
-    texture_bounds : (Point, Vector),
-    screen_bounds  : (Point, Vector),
-  },
-  All(Many<TextureId>),
+pub struct RHS<TextureId> {
+  pub actions : Vec<Terminal<TextureId>>,
+  pub next    : Vec<Nonterminal>,
 }
 
-pub use self::T::*;
+#[derive(Debug, Clone)]
+pub struct T<TextureId> {
+  pub rules: std::collections::HashMap<Nonterminal, RHS<TextureId>>,
+}
 
-impl<TextureId: Clone + Eq + std::hash::Hash> T<TextureId> {
-  pub fn render(&self, transform: &Matrix, vertices: &mut vertices::T<TextureId>) {
-    match self {
-      &WithTransform(ref new_transform, ref t) => {
-        let transform = transform * new_transform.to_matrix();
-        for inner in t {
-          inner.render(&transform, vertices);
-        }
+fn render_void<TextureId: Clone + Eq + std::hash::Hash>(
+  t         : &T<TextureId>,
+  depth     : u32,
+  nt        : Nonterminal,
+  transform : &Matrix,
+  vertices  : &mut vertices::T<TextureId>,
+) {
+  if depth == 0 {
+    return
+  }
+
+  let rhs =
+    match t.rules.get(&nt) {
+      None => return,
+      Some(rhs) => rhs,
+    };
+
+  let mut transform = transform.clone();
+
+  for action in &rhs.actions {
+    match action {
+      &Terminal::Transform(ref t) => {
+        transform = transform * t.to_matrix();
       },
-      &DrawTexture { ref texture_id, texture_bounds: (tex_p, tex_l), screen_bounds: (screen_p, screen_l) } => {
+      &Terminal::AddBranch { ref texture_id, width, length } => {
         let drop_z = |p: cgmath::Vector3<f32>| { [ p.x, p.y ] };
 
-        let v1 = transform * cgmath::Vector3::new(screen_p.x             , screen_p.y             , 1.0);
-        let v2 = transform * cgmath::Vector3::new(screen_p.x + screen_l.x, screen_p.y             , 1.0);
-        let v3 = transform * cgmath::Vector3::new(screen_p.x + screen_l.x, screen_p.y + screen_l.y, 1.0);
-        let v4 = transform * cgmath::Vector3::new(screen_p.x             , screen_p.y + screen_l.y, 1.0);
+        let x1 = width / 2.0;
+        let x0 = -x1;
+        let y0 = 0.0;
+        let y1 = length;
 
-        let t1 = [ tex_p.x          , tex_p.y ];
-        let t2 = [ tex_p.x + tex_l.x, tex_p.y ];
-        let t3 = [ tex_p.x + tex_l.x, tex_p.y + tex_l.y ];
-        let t4 = [ tex_p.x          , tex_p.y + tex_l.y ];
+        let v1 = transform * cgmath::Vector3::new(x0, y0, 1.0);
+        let v2 = transform * cgmath::Vector3::new(x1, y0, 1.0);
+        let v3 = transform * cgmath::Vector3::new(x1, y1, 1.0);
+        let v4 = transform * cgmath::Vector3::new(x0, y1, 1.0);
 
-        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v2), texture_posn: t2 });
-        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v1), texture_posn: t1 });
-        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v3), texture_posn: t3 });
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v2), texture_posn: [ 1.0, -1.0] });
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v1), texture_posn: [-1.0, -1.0] });
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v3), texture_posn: [ 1.0,  1.0] });
 
-        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v3), texture_posn: t3 });
-        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v1), texture_posn: t1 });
-        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v4), texture_posn: t4 });
-      },
-      &All(ref many) => {
-        for t in many {
-          t.render(transform, vertices);
-        }
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v3), texture_posn: [ 1.0,  1.0] });
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v1), texture_posn: [-1.0, -1.0] });
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v4), texture_posn: [-1.0,  1.0] });
+
+        transform = transform * translate(&Vector::new(0.0, length));
       },
     }
   }
+
+  for nt in &rhs.next {
+    render_void(t, depth - 1, *nt, &transform, vertices);
+  }
+}
+
+pub fn render<TextureId: Clone + Eq + std::hash::Hash>(
+  t         : &T<TextureId>,
+  depth     : u32,
+  transform : &Matrix,
+) -> vertices::T<TextureId> {
+  let mut vertices = vertices::new();
+  render_void(t, depth, Nonterminal(0), transform, &mut vertices);
+  vertices
 }

@@ -8,7 +8,7 @@ extern crate lsystem_renderer;
 mod support;
 
 use support::prelude::*;
-use lsystem_renderer::language::*;
+use lsystem_renderer::language;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TextureId {
@@ -55,83 +55,62 @@ impl support::Texture for TextureId {
   }
 }
 
-fn branch() -> T<TextureId> {
-  DrawTexture {
-    texture_id: TextureId::Wood,
-    texture_bounds: (Point::new(-1.0, -1.0), Vector::new(2.0, 2.0)),
-    screen_bounds: (Point::new(-0.1, 0.0), Vector::new(0.2, 1.0)),
+fn rotate(degrees: f32) -> language::Transform {
+  language::Transform {
+    rotation : std::f32::consts::PI * degrees / 180.0,
+    scale    : Vector::new(1.0, 1.0),
   }
 }
 
-fn forward() -> Transform {
-  Translate(0.0, 1.0)
-}
-
-fn turn_left() -> Transform {
-  Rotate( std::f32::consts::PI * 25.0 / 180.0)
-}
-
-fn turn_right() -> Transform {
-  Rotate(-std::f32::consts::PI * 25.0 / 180.0)
-}
-
-fn x(depth: u32) -> T<TextureId> {
-  if depth == 0 {
-    return All(vec!())
+fn scale(s: f32) -> language::Transform {
+  language::Transform {
+    rotation : 0.0,
+    scale    : Vector::new(s, s),
   }
+}
 
-  let recurse = || {
-    WithTransform(
-      Scale(0.5),
-      vec!(x(depth - 1)),
-    )
+fn new() -> language::T<TextureId> {
+  let s       = language::Nonterminal(0);
+  let s2      = language::Nonterminal(1);
+  let l       = language::Nonterminal(2);
+  let r       = language::Nonterminal(3);
+  let recurse = language::Nonterminal(4);
+
+  let rotate = |degrees| language::Terminal::Transform(rotate(degrees));
+  let scale = |s| language::Terminal::Transform(scale(s));
+
+  let add_branch = || {
+    language::Terminal::AddBranch {
+      texture_id : TextureId::Wood,
+      width      : 0.2,
+      length     : 1.0,
+    }
   };
 
-  All(vec!(
-    branch(),
-    WithTransform(
-      forward(),
-      vec!(
-        WithTransform(
-          turn_left(),
-          vec!(recurse()),
-        ),
-        recurse(),
-        branch(),
-        WithTransform(
-          forward(),
-          vec!(
-            WithTransform(
-              turn_right(),
-              vec!(
-                branch(),
-                WithTransform(
-                  forward(),
-                  vec!(recurse()),
-                ),
-              ),
-            ),
-            WithTransform(
-              turn_left(),
-              vec!(recurse()),
-            ),
-          ),
-        ),
-      ),
-    ),
-  ))
-}
+  let rules =
+    vec!(
+      (s      , vec!(add_branch())              , vec!(l, recurse, s2)),
+      (s2     , vec!(add_branch(), add_branch()), vec!(r, l)),
+      (l      , vec!(rotate( 25.0))             , vec!(recurse)),
+      (r      , vec!(rotate(-25.0))             , vec!(recurse)),
+      (recurse, vec!(scale(0.5))                , vec!(s)),
+    );
+  let rules =
+    std::iter::FromIterator::from_iter(
+      rules
+      .into_iter()
+      .map(|(nt, actions, next)| (nt, language::RHS { actions: actions, next: next }))
+    );
 
-fn new(depth: u32) -> T<TextureId> {
-  x(depth)
+  language::T {
+    rules: rules,
+  }
 }
 
 pub fn main() {
   let transform =
-    Seq(vec!(
-      Translate(-0.8, -0.8),
-      Scale(0.3),
-      Rotate(-std::f32::consts::PI * 25.0 / 180.0),
-    )).to_matrix();
-  support::main(&transform, new(8))
+    language::translate(&Vector::new(-0.8, -0.8)) *
+    rotate(-25.0).to_matrix() *
+    scale(0.3).to_matrix();
+  support::main(&transform, new())
 }
