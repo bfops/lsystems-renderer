@@ -1,6 +1,9 @@
 use cgmath;
+use std;
+
 use prelude::*;
 use vertex;
+use vertices;
 
 #[derive(Debug, Clone)]
 pub enum Transform {
@@ -46,19 +49,23 @@ impl Transform {
 
 pub use self::Transform::*;
 
-pub type Many = Vec<T>;
+pub type Many<TextureId> = Vec<T<TextureId>>;
 
 #[derive(Debug, Clone)]
-pub enum T {
-  WithTransform(Transform, Many),
-  Line(Point, Point),
-  All(Many),
+pub enum T<TextureId> {
+  WithTransform(Transform, Many<TextureId>),
+  DrawTexture {
+    texture_id     : TextureId,
+    texture_bounds : (Point, Vector),
+    screen_bounds  : (Point, Vector),
+  },
+  All(Many<TextureId>),
 }
 
 pub use self::T::*;
 
-impl T {
-  pub fn render(&self, transform: &Matrix, vertices: &mut Vec<vertex::T>) {
+impl<TextureId: Clone + Eq + std::hash::Hash> T<TextureId> {
+  pub fn render(&self, transform: &Matrix, vertices: &mut vertices::T<TextureId>) {
     match self {
       &WithTransform(ref new_transform, ref t) => {
         let transform = transform * new_transform.to_matrix();
@@ -66,11 +73,26 @@ impl T {
           inner.render(&transform, vertices);
         }
       },
-      &Line(ref p1, ref p2) => {
-        let p1 = transform * cgmath::Vector3::new(p1.x, p1.y, 1.0);
-        let p2 = transform * cgmath::Vector3::new(p2.x, p2.y, 1.0);
-        vertices.push(vertex::T { position: [p1.x, p1.y] });
-        vertices.push(vertex::T { position: [p2.x, p2.y] });
+      &DrawTexture { ref texture_id, texture_bounds: (tex_p, tex_l), screen_bounds: (screen_p, screen_l) } => {
+        let drop_z = |p: cgmath::Vector3<f32>| { [ p.x, p.y ] };
+
+        let v1 = transform * cgmath::Vector3::new(screen_p.x             , screen_p.y             , 1.0);
+        let v2 = transform * cgmath::Vector3::new(screen_p.x + screen_l.x, screen_p.y             , 1.0);
+        let v3 = transform * cgmath::Vector3::new(screen_p.x + screen_l.x, screen_p.y + screen_l.y, 1.0);
+        let v4 = transform * cgmath::Vector3::new(screen_p.x             , screen_p.y + screen_l.y, 1.0);
+
+        let t1 = [ tex_p.x          , tex_p.y ];
+        let t2 = [ tex_p.x + tex_l.x, tex_p.y ];
+        let t3 = [ tex_p.x + tex_l.x, tex_p.y + tex_l.y ];
+        let t4 = [ tex_p.x          , tex_p.y + tex_l.y ];
+
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v2), texture_posn: t2 });
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v1), texture_posn: t1 });
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v3), texture_posn: t3 });
+
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v3), texture_posn: t3 });
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v1), texture_posn: t1 });
+        vertices.push(texture_id.clone(), vertex::T { screen_posn: drop_z(v4), texture_posn: t4 });
       },
       &All(ref many) => {
         for t in many {

@@ -10,3 +10,4 @@ mod prelude;
 
 pub mod language;
 pub mod vertex;
+pub mod vertices;

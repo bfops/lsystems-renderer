@@ -3,16 +3,21 @@ extern crate lsystem_renderer;
 
 pub mod prelude;
 
-use self::prelude::*;
-
 use glium;
 use glutin;
 use lsystem_renderer::language;
+use std;
+
+use self::prelude::*;
 
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 800;
 
-pub fn main(transform: &Matrix, t: language::T) {
+pub trait Texture {
+  fn to_fragment_shader(&self) -> String;
+}
+
+pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matrix, t: language::T<TextureId>) {
   use glium::DisplayBuild;
 
   let window =
@@ -44,56 +49,56 @@ pub fn main(transform: &Matrix, t: language::T) {
     let mut target = window.draw();
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
-    let mut vertices = Vec::new();
+    let mut vertices = lsystem_renderer::vertices::new();
     t.render(&transform, &mut vertices);
-    let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
+    let vertices = vertices.to_hashmap();
 
-    let program =
-      program!(
-        &window,
-        330 => {
-          vertex: "
-            #version 330
+    for (texture_id, vertices) in &vertices {
+      let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
 
-            uniform mat4 matrix;
+      let program =
+        program!(
+          &window,
+          330 => {
+            vertex: "
+              #version 330
 
-            in vec2 position;
+              uniform mat4 transform;
 
-            void main() {
-              gl_Position = matrix * vec4(position, 0.0, 1.0);
-            }
-          ",
+              in vec2 screen_posn;
+              in vec2 texture_posn;
 
-          fragment: "
-            #version 330
+              out vec2 f_texture_posn;
 
-            out vec4 f_color;
+              void main() {
+                f_texture_posn = texture_posn;
+                gl_Position = transform * vec4(screen_posn, 0.0, 1.0);
+              }
+            ",
 
-            void main() {
-              f_color = vec4(0.0, 0.0, 0.0, 1.0);
-            }
-          "
-        },
+            fragment: &texture_id.to_fragment_shader(),
+          },
+        ).unwrap();
+
+      // building the uniforms
+      let uniforms = uniform! {
+        transform: [
+          [1.0, 0.0, 0.0, 0.0],
+          [0.0, 1.0, 0.0, 0.0],
+          [0.0, 0.0, 1.0, 0.0],
+          [0.0, 0.0, 0.0, 1.0f32]
+        ],
+      };
+
+      glium::Surface::draw(
+        &mut target,
+        &vertex_buffer,
+        glium::index::IndicesSource::NoIndices { primitives: glium::index::PrimitiveType::TrianglesList },
+        &program,
+        &uniforms,
+        &draw_parameters,
       ).unwrap();
-
-    // building the uniforms
-    let uniforms = uniform! {
-      matrix: [
-        [1.0, 0.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 0.0, 1.0f32]
-      ],
-    };
-
-    glium::Surface::draw(
-      &mut target,
-      &vertex_buffer,
-      glium::index::IndicesSource::NoIndices { primitives: glium::index::PrimitiveType::LinesList },
-      &program,
-      &uniforms,
-      &draw_parameters,
-    ).unwrap();
+    }
 
     target.finish().unwrap();
 
