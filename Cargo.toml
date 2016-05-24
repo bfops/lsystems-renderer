@@ -1,6 +1,6 @@
 [package]
 
-name = "lsystem-renderer"
+name = "lsystems"
 version = "0.0.0"
 authors = []
 
@@ -13,7 +13,7 @@ debug-assertions = true # Controls whether debug assertions are enabled
 
 [lib]
 
-name = "lsystem_renderer"
+name = "lsystems"
 path = "./src/mod.rs"
 
 [dependencies]

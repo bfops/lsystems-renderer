@@ -3,22 +3,29 @@
 #[macro_use]
 extern crate glium;
 extern crate glutin;
-extern crate lsystem_renderer;
+extern crate lsystems;
+extern crate rand;
 
 mod support;
 
 use support::prelude::*;
-use lsystem_renderer::grammar;
+use lsystems::grammar;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TextureId {
-  Wood,
+  Stem,
+}
+
+impl rand::Rand for TextureId {
+  fn rand<Rng: rand::Rng>(_: &mut Rng) -> Self {
+    TextureId::Stem
+  }
 }
 
 impl support::Texture for TextureId {
   fn to_fragment_shader(&self) -> String {
     match self {
-      &TextureId::Wood => "
+      &TextureId::Stem => "
         #version 330
 
         in vec2 f_texture_posn;
@@ -81,7 +88,7 @@ fn new() -> grammar::T<TextureId> {
 
   let add_branch = || {
     grammar::Terminal::AddBranch {
-      texture_id : TextureId::Wood,
+      texture_id : TextureId::Stem,
       width      : 0.2,
       length     : 1.0,
     }
@@ -89,18 +96,17 @@ fn new() -> grammar::T<TextureId> {
 
   let rules =
     vec!(
-      (s      , vec!(add_branch())              , vec!(l, recurse, s2)),
-      (s2     , vec!(add_branch(), add_branch()), vec!(r, l)),
-      (l      , vec!(rotate( 25.0))             , vec!(recurse)),
-      (r      , vec!(rotate(-25.0))             , vec!(recurse)),
-      (recurse, vec!(scale(0.5))                , vec!(s)),
+      (vec!(add_branch())              , vec!(l, recurse, s2)),
+      (vec!(add_branch(), add_branch()), vec!(r, l)),
+      (vec!(rotate( 25.0))             , vec!(recurse)),
+      (vec!(rotate(-25.0))             , vec!(recurse)),
+      (vec!(scale(0.5))                , vec!(s)),
     );
   let rules =
-    std::iter::FromIterator::from_iter(
-      rules
-      .into_iter()
-      .map(|(nt, actions, next)| (nt, grammar::RHS { actions: actions, next: next }))
-    );
+    rules
+    .into_iter()
+    .map(|(actions, next)| grammar::RHS { actions: actions, next: next })
+    .collect();
 
   grammar::T {
     rules: rules,

@@ -1,16 +1,23 @@
 #[macro_use]
 extern crate glium;
 extern crate glutin;
-extern crate lsystem_renderer;
+extern crate lsystems;
+extern crate rand;
 
 mod support;
 
 use support::prelude::*;
-use lsystem_renderer::grammar;
+use lsystems::grammar;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TextureId {
   Wood,
+}
+
+impl rand::Rand for TextureId {
+  fn rand<Rng: rand::Rng>(_: &mut Rng) -> Self {
+    TextureId::Wood
+  }
 }
 
 impl support::Texture for TextureId {
@@ -86,16 +93,15 @@ fn new() -> grammar::T<TextureId> {
 
   let rules =
     vec!(
-      (s, vec!(add_branch()),              vec!(l, r)),
-      (l, vec!(scale(0.5), rotate( 45.0)), vec!(s)),
-      (r, vec!(scale(0.5), rotate(-45.0)), vec!(s)),
+      (vec!(add_branch()),              vec!(l, r)),
+      (vec!(scale(0.5), rotate( 45.0)), vec!(s)),
+      (vec!(scale(0.5), rotate(-45.0)), vec!(s)),
     );
   let rules =
-    std::iter::FromIterator::from_iter(
-      rules
-      .into_iter()
-      .map(|(nt, actions, next)| (nt, grammar::RHS { actions: actions, next: next }))
-    );
+    rules
+    .into_iter()
+    .map(|(actions, next)| grammar::RHS { actions: actions, next: next })
+    .collect();
 
   grammar::T {
     rules: rules,

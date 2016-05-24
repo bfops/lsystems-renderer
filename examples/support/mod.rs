@@ -1,11 +1,11 @@
 extern crate rand;
-extern crate lsystem_renderer;
 
 pub mod prelude;
 
 use glium;
 use glutin;
-use lsystem_renderer::grammar;
+use lsystems;
+use lsystems::grammar;
 use std;
 
 use self::prelude::*;
@@ -13,11 +13,11 @@ use self::prelude::*;
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 800;
 
-pub trait Texture {
+pub trait Texture : Clone + Eq + std::hash::Hash + rand::Rand {
   fn to_fragment_shader(&self) -> String;
 }
 
-pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matrix, mut t: grammar::T<TextureId>) {
+pub fn main<TextureId: Texture>(transform: &Matrix, mut t: grammar::T<TextureId>) {
   use glium::DisplayBuild;
 
   let window =
@@ -107,6 +107,6 @@ pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matri
       }
     }
 
-    lsystems_renderer::mutate(&mut grammar, &mut rng);
+    lsystems::mutate(&mut t, &mut rng);
   }
 }

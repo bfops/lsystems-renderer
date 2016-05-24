@@ -135,13 +135,13 @@ fn remove<TextureId, Rng: rand::Rng>(t: &mut T<TextureId>, rng: &mut Rng) {
 pub fn mutate<TextureId: rand::Rand, Rng: rand::Rng>(t: &mut T<TextureId>, rng: &mut Rng) {
   let mut f = rng.next_f32();
 
-  f -= 0.3;
+  f -= 0.1;
   if f <= 0.0 {
     add(t, rng);
     return
   }
 
-  f -= 0.3;
+  f -= 0.1;
   if f <= 0.0 {
     remove(t, rng);
     return
