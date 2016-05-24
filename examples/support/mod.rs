@@ -17,7 +17,7 @@ pub trait Texture {
   fn to_fragment_shader(&self) -> String;
 }
 
-pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matrix, t: grammar::T<TextureId>) {
+pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matrix, mut t: grammar::T<TextureId>) {
   use glium::DisplayBuild;
 
   let window =
@@ -106,5 +106,7 @@ pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matri
         _ => {},
       }
     }
+
+    lsystems_renderer::mutate(&mut grammar, &mut rng);
   }
 }

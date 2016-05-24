@@ -6,8 +6,11 @@ extern crate log;
 extern crate rand;
 extern crate time;
 
+mod mutate;
 mod prelude;
 
 pub mod grammar;
 pub mod vertex;
 pub mod vertices;
+
+pub use mutate::mutate;

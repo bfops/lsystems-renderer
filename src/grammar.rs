@@ -50,6 +50,7 @@ pub enum Terminal<TextureId> {
   },
 }
 
+/// A Nonterminal is just a rule index.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Nonterminal(pub u32);
 
@@ -61,7 +62,7 @@ pub struct RHS<TextureId> {
 
 #[derive(Debug, Clone)]
 pub struct T<TextureId> {
-  pub rules: std::collections::HashMap<Nonterminal, RHS<TextureId>>,
+  pub rules: Vec<RHS<TextureId>>,
 }
 
 fn render_void<TextureId: Clone + Eq + std::hash::Hash>(
@@ -75,11 +76,11 @@ fn render_void<TextureId: Clone + Eq + std::hash::Hash>(
     return
   }
 
-  let rhs =
-    match t.rules.get(&nt) {
-      None => return,
-      Some(rhs) => rhs,
-    };
+  if nt.0 as usize >= t.rules.len() {
+    return
+  }
+
+  let rhs = &t.rules[nt.0 as usize];
 
   let mut transform = transform.clone();
 
