@@ -8,7 +8,7 @@ extern crate lsystem_renderer;
 mod support;
 
 use support::prelude::*;
-use lsystem_renderer::language;
+use lsystem_renderer::grammar;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TextureId {
@@ -55,32 +55,32 @@ impl support::Texture for TextureId {
   }
 }
 
-fn rotate(degrees: f32) -> language::Transform {
-  language::Transform {
+fn rotate(degrees: f32) -> grammar::Transform {
+  grammar::Transform {
     rotation : std::f32::consts::PI * degrees / 180.0,
     scale    : Vector::new(1.0, 1.0),
   }
 }
 
-fn scale(s: f32) -> language::Transform {
-  language::Transform {
+fn scale(s: f32) -> grammar::Transform {
+  grammar::Transform {
     rotation : 0.0,
     scale    : Vector::new(s, s),
   }
 }
 
-fn new() -> language::T<TextureId> {
-  let s       = language::Nonterminal(0);
-  let s2      = language::Nonterminal(1);
-  let l       = language::Nonterminal(2);
-  let r       = language::Nonterminal(3);
-  let recurse = language::Nonterminal(4);
+fn new() -> grammar::T<TextureId> {
+  let s       = grammar::Nonterminal(0);
+  let s2      = grammar::Nonterminal(1);
+  let l       = grammar::Nonterminal(2);
+  let r       = grammar::Nonterminal(3);
+  let recurse = grammar::Nonterminal(4);
 
-  let rotate = |degrees| language::Terminal::Transform(rotate(degrees));
-  let scale = |s| language::Terminal::Transform(scale(s));
+  let rotate = |degrees| grammar::Terminal::Transform(rotate(degrees));
+  let scale = |s| grammar::Terminal::Transform(scale(s));
 
   let add_branch = || {
-    language::Terminal::AddBranch {
+    grammar::Terminal::AddBranch {
       texture_id : TextureId::Wood,
       width      : 0.2,
       length     : 1.0,
@@ -99,17 +99,17 @@ fn new() -> language::T<TextureId> {
     std::iter::FromIterator::from_iter(
       rules
       .into_iter()
-      .map(|(nt, actions, next)| (nt, language::RHS { actions: actions, next: next }))
+      .map(|(nt, actions, next)| (nt, grammar::RHS { actions: actions, next: next }))
     );
 
-  language::T {
+  grammar::T {
     rules: rules,
   }
 }
 
 pub fn main() {
   let transform =
-    language::translate(&Vector::new(-0.8, -0.8)) *
+    grammar::translate(&Vector::new(-0.8, -0.8)) *
     rotate(-25.0).to_matrix() *
     scale(0.3).to_matrix();
   support::main(&transform, new())

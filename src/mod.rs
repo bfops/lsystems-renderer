@@ -8,6 +8,6 @@ extern crate time;
 
 mod prelude;
 
-pub mod language;
+pub mod grammar;
 pub mod vertex;
 pub mod vertices;

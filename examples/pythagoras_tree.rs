@@ -6,7 +6,7 @@ extern crate lsystem_renderer;
 mod support;
 
 use support::prelude::*;
-use lsystem_renderer::language;
+use lsystem_renderer::grammar;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TextureId {
@@ -53,13 +53,13 @@ impl support::Texture for TextureId {
   }
 }
 
-fn new() -> language::T<TextureId> {
-  let s = language::Nonterminal(0);
-  let l = language::Nonterminal(1);
-  let r = language::Nonterminal(2);
+fn new() -> grammar::T<TextureId> {
+  let s = grammar::Nonterminal(0);
+  let l = grammar::Nonterminal(1);
+  let r = grammar::Nonterminal(2);
 
   let add_branch = || {
-    language::Terminal::AddBranch {
+    grammar::Terminal::AddBranch {
       texture_id : TextureId::Wood,
       width      : 0.2,
       length      : 1.0,
@@ -67,8 +67,8 @@ fn new() -> language::T<TextureId> {
   };
 
   let rotate = |degrees: f32| {
-    language::Terminal::Transform(
-      language::Transform {
+    grammar::Terminal::Transform(
+      grammar::Transform {
         rotation : std::f32::consts::PI * degrees / 180.0,
         scale    : Vector::new(1.0, 1.0),
       }
@@ -76,8 +76,8 @@ fn new() -> language::T<TextureId> {
   };
 
   let scale = |s| {
-    language::Terminal::Transform(
-      language::Transform {
+    grammar::Terminal::Transform(
+      grammar::Transform {
         rotation : 0.0,
         scale    : Vector::new(s, s),
       }
@@ -94,15 +94,15 @@ fn new() -> language::T<TextureId> {
     std::iter::FromIterator::from_iter(
       rules
       .into_iter()
-      .map(|(nt, actions, next)| (nt, language::RHS { actions: actions, next: next }))
+      .map(|(nt, actions, next)| (nt, grammar::RHS { actions: actions, next: next }))
     );
 
-  language::T {
+  grammar::T {
     rules: rules,
   }
 }
 
 pub fn main() {
-  let transform = language::translate(&Vector::new(0.0, -1.0));
+  let transform = grammar::translate(&Vector::new(0.0, -1.0));
   support::main(&transform, new())
 }

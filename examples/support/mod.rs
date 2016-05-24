@@ -5,7 +5,7 @@ pub mod prelude;
 
 use glium;
 use glutin;
-use lsystem_renderer::language;
+use lsystem_renderer::grammar;
 use std;
 
 use self::prelude::*;
@@ -17,7 +17,7 @@ pub trait Texture {
   fn to_fragment_shader(&self) -> String;
 }
 
-pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matrix, t: language::T<TextureId>) {
+pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matrix, t: grammar::T<TextureId>) {
   use glium::DisplayBuild;
 
   let window =
@@ -49,7 +49,7 @@ pub fn main<TextureId: Clone + Eq + std::hash::Hash + Texture>(transform: &Matri
     let mut target = window.draw();
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
-    let vertices = language::render(&t, 8, &transform).to_hashmap();
+    let vertices = grammar::render(&t, 8, &transform).to_hashmap();
 
     for (texture_id, vertices) in &vertices {
       let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
