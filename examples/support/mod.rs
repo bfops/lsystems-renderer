@@ -28,6 +28,8 @@ pub fn main<TextureId: Texture>(transform: &Matrix, mut t: grammar::T<TextureId>
 
   let mut rng: rand::XorShiftRng = rand::SeedableRng::from_seed([0x12345678, 0x9abcdef0, 0x13371337, 0x98765432]);
 
+  let mut prev = t.clone();
+
   loop {
     let draw_parameters =
       glium::DrawParameters {
@@ -103,10 +105,22 @@ pub fn main<TextureId: Texture>(transform: &Matrix, mut t: grammar::T<TextureId>
     for event in window.poll_events() {
       match event {
         glutin::Event::Closed => return,
+        glutin::Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(keycode)) => {
+          use glutin::VirtualKeyCode::*;
+          match keycode {
+            Down => {
+              t = prev.clone();
+              lsystems::mutate(&mut t, &mut rng);
+            },
+            Up => {
+              prev = t.clone();
+              lsystems::mutate(&mut t, &mut rng);
+            },
+            _ => {},
+          }
+        },
         _ => {},
       }
     }
-
-    lsystems::mutate(&mut t, &mut rng);
   }
 }
