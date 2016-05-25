@@ -1,6 +1,7 @@
 use rand;
 use std;
 
+use alphabet::*;
 use prelude::*;
 use grammar::*;
 

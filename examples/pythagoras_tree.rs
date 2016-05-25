@@ -8,6 +8,7 @@ extern crate rand;
 mod support;
 
 use support::prelude::*;
+use lsystems::alphabet;
 use lsystems::grammar;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -67,7 +68,7 @@ fn new() -> grammar::T<TextureId> {
   let r = grammar::Nonterminal(2);
 
   let add_branch = || {
-    grammar::Terminal::AddBranch {
+    alphabet::Terminal::AddBranch {
       texture_id : TextureId::Wood,
       width      : 0.2,
       length      : 1.0,
@@ -75,8 +76,8 @@ fn new() -> grammar::T<TextureId> {
   };
 
   let rotate = |degrees: f32| {
-    grammar::Terminal::Transform(
-      grammar::Transform {
+    alphabet::Terminal::Transform(
+      alphabet::Transform {
         rotation : std::f32::consts::PI * degrees / 180.0,
         scale    : Vector::new(1.0, 1.0),
       }
@@ -84,8 +85,8 @@ fn new() -> grammar::T<TextureId> {
   };
 
   let scale = |s| {
-    grammar::Terminal::Transform(
-      grammar::Transform {
+    alphabet::Terminal::Transform(
+      alphabet::Transform {
         rotation : 0.0,
         scale    : Vector::new(s, s),
       }

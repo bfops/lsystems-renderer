@@ -6,6 +6,7 @@ use glium;
 use glutin;
 use lsystems;
 use lsystems::grammar;
+use lsystems::word;
 use rand;
 use std;
 
@@ -52,7 +53,8 @@ pub fn main<TextureId: Texture>(transform: &cgmath::Matrix4<f32>, mut t: grammar
     let mut target = window.draw();
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
-    let vertices = grammar::render(&t, 1 << 4).to_hashmap();
+    let word = word::generate(&t, 1 << 4);
+    let vertices = lsystems::render(&word).to_hashmap();
 
     for (texture_id, vertices) in &vertices {
       let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
