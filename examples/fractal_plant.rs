@@ -1,5 +1,6 @@
 /// https://en.wikipedia.org/wiki/L-system#Example_7:_Fractal_plant
 
+extern crate cgmath;
 #[macro_use]
 extern crate glium;
 extern crate glutin;
@@ -114,9 +115,10 @@ fn new() -> grammar::T<TextureId> {
 }
 
 pub fn main() {
+  use cgmath::*;
   let transform =
-    grammar::translate(&Vector::new(-0.8, -0.8)) *
-    rotate(-25.0).to_matrix() *
-    scale(0.3).to_matrix();
+    Matrix4::from_translation(Vector3::new(-0.8, -0.8, 0.0)) *
+    Matrix4::from(<Quaternion<f32> as Rotation3<f32>>::from_angle_z(Rad::from(deg(-25.0)))) *
+    Matrix4::from_scale(0.3);
   support::main(&transform, new())
 }

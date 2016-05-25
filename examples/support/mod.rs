@@ -1,14 +1,13 @@
-extern crate rand;
-
 pub mod prelude;
+mod shader_cache;
 
+use cgmath;
 use glium;
 use glutin;
 use lsystems;
 use lsystems::grammar;
+use rand;
 use std;
-
-use self::prelude::*;
 
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 800;
@@ -17,7 +16,7 @@ pub trait Texture : Clone + Eq + std::hash::Hash + rand::Rand {
   fn to_fragment_shader(&self) -> String;
 }
 
-pub fn main<TextureId: Texture>(transform: &Matrix, mut t: grammar::T<TextureId>) {
+pub fn main<TextureId: Texture>(transform: &cgmath::Matrix4<f32>, mut t: grammar::T<TextureId>) {
   use glium::DisplayBuild;
 
   let window =
@@ -30,71 +29,45 @@ pub fn main<TextureId: Texture>(transform: &Matrix, mut t: grammar::T<TextureId>
 
   let mut prev = t.clone();
 
-  loop {
-    let draw_parameters =
-      glium::DrawParameters {
-        depth:
-          glium::Depth {
-            test: glium::DepthTest::Overwrite,
-            write: false,
-            .. Default::default()
-          },
-        blend:
-          glium::Blend {
-            color: glium::BlendingFunction::AlwaysReplace,
-            alpha: glium::BlendingFunction::AlwaysReplace,
-            constant_value: (0.0, 0.0, 0.0, 0.0),
-          },
-        .. Default::default()
-      };
+  let draw_parameters =
+    glium::DrawParameters {
+      depth:
+        glium::Depth {
+          test: glium::DepthTest::Overwrite,
+          write: false,
+          .. Default::default()
+        },
+      blend:
+        glium::Blend {
+          color: glium::BlendingFunction::AlwaysReplace,
+          alpha: glium::BlendingFunction::AlwaysReplace,
+          constant_value: (0.0, 0.0, 0.0, 0.0),
+        },
+      .. Default::default()
+    };
 
+  let mut shader_cache = shader_cache::new();
+
+  loop {
     let mut target = window.draw();
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
-    let vertices = grammar::render(&t, 8, &transform).to_hashmap();
+    let vertices = grammar::render(&t, 8).to_hashmap();
 
     for (texture_id, vertices) in &vertices {
       let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
 
-      let program =
-        program!(
-          &window,
-          330 => {
-            vertex: "
-              #version 330
+      let program = shader_cache.get(&window, texture_id.clone());
 
-              uniform mat4 transform;
-
-              in vec2 screen_posn;
-              in vec2 texture_posn;
-
-              out vec2 f_texture_posn;
-
-              void main() {
-                f_texture_posn = texture_posn;
-                gl_Position = transform * vec4(screen_posn, 0.0, 1.0);
-              }
-            ",
-
-            fragment: &texture_id.to_fragment_shader(),
-          },
-        ).unwrap();
-
-      // building the uniforms
       let uniforms = uniform! {
-        transform: [
-          [1.0, 0.0, 0.0, 0.0],
-          [0.0, 1.0, 0.0, 0.0],
-          [0.0, 0.0, 1.0, 0.0],
-          [0.0, 0.0, 0.0, 1.0f32]
-        ],
+        transform: cgmath::conv::array4x4(*transform),
       };
 
       glium::Surface::draw(
         &mut target,
         &vertex_buffer,
         glium::index::IndicesSource::NoIndices { primitives: glium::index::PrimitiveType::TrianglesList },
-        &program,
+        program,
         &uniforms,
         &draw_parameters,
       ).unwrap();

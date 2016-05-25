@@ -123,9 +123,9 @@ fn render_void<TextureId: Clone + Eq + std::hash::Hash>(
 pub fn render<TextureId: Clone + Eq + std::hash::Hash>(
   t         : &T<TextureId>,
   depth     : u32,
-  transform : &Matrix,
 ) -> vertices::T<TextureId> {
   let mut vertices = vertices::new();
-  render_void(t, depth, Nonterminal(0), transform, &mut vertices);
+  let transform = cgmath::SquareMatrix::from_value(1.0);
+  render_void(t, depth, Nonterminal(0), &transform, &mut vertices);
   vertices
 }

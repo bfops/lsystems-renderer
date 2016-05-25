@@ -1,3 +1,4 @@
+extern crate cgmath;
 #[macro_use]
 extern crate glium;
 extern crate glutin;
@@ -109,6 +110,7 @@ fn new() -> grammar::T<TextureId> {
 }
 
 pub fn main() {
-  let transform = grammar::translate(&Vector::new(0.0, -1.0));
+  let transform =
+    cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, -1.0, 0.0));
   support::main(&transform, new())
 }
