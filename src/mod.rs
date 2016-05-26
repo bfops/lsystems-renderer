@@ -1,3 +1,5 @@
+#![deny(warnings)]
+
 extern crate cgmath;
 #[macro_use]
 extern crate glium;
