@@ -98,11 +98,11 @@ fn new() -> grammar::T<TextureId> {
 
   let rules =
     vec!(
-      (vec!(add_branch())              , vec!(l, recurse, s2)),
-      (vec!(add_branch(), add_branch()), vec!(r, l)),
-      (vec!(rotate( 25.0))             , vec!(recurse)),
-      (vec!(rotate(-25.0))             , vec!(recurse)),
-      (vec!(scale(0.5))                , vec!(s)),
+      (vec!(add_branch())               , vec!(l, recurse, s2)),
+      (vec!(add_branch(), add_branch()) , vec!(r, l)),
+      (vec!(rotate( 25.0))              , vec!(recurse)),
+      (vec!(rotate(-25.0))              , vec!(recurse)),
+      (vec!(scale(0.5))                 , vec!(s)),
     );
   let rules =
     rules

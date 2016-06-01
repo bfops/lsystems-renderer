@@ -53,7 +53,7 @@ pub fn main<TextureId: Texture>(transform: &cgmath::Matrix4<f32>, mut t: grammar
     let mut target = window.draw();
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
-    let word = word::generate(&t, 1 << 6, 1 << 18, 0.01);
+    let word = word::generate(&t, 1 << 6, 1 << 18, 0.01, 1000000.0, 1000000.0);
     let vertices = lsystems::render(&word).to_hashmap();
 
     for (texture_id, vertices) in &vertices {
