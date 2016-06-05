@@ -17,7 +17,7 @@ pub trait Texture : Clone + Eq + std::hash::Hash + rand::Rand {
   fn to_fragment_shader(&self) -> String;
 }
 
-pub fn main<TextureId: Texture>(transform: &cgmath::Matrix4<f32>, mut t: grammar::T<TextureId>) {
+pub fn main<Texture: self::Texture>(mut t: grammar::T<Texture>) {
   use glium::DisplayBuild;
 
   let window =
@@ -56,13 +56,32 @@ pub fn main<TextureId: Texture>(transform: &cgmath::Matrix4<f32>, mut t: grammar
     let word = word::generate(&t, 1 << 6, 1 << 18, 0.01, 1000000.0, 1000000.0);
     let vertices = lsystems::render(&word).to_hashmap();
 
+    let mut min_x = std::f32::INFINITY;
+    let mut min_y = std::f32::INFINITY;
+    let mut max_x = std::f32::NEG_INFINITY;
+    let mut max_y = std::f32::NEG_INFINITY;
+    for (_, vertices) in &vertices {
+      for vertex in vertices {
+        let x = vertex.screen_posn[0];
+        let y = vertex.screen_posn[1];
+        min_x = min_x.min(x);
+        min_y = min_y.min(y);
+        max_x = max_x.max(x);
+        max_y = max_y.max(y);
+      }
+    }
+
     for (texture_id, vertices) in &vertices {
       let vertex_buffer = glium::VertexBuffer::new(&window, &vertices).unwrap();
 
       let program = shader_cache.get(&window, texture_id.clone());
 
+      let transform =
+        cgmath::Matrix4::from_nonuniform_scale(2.0 / (max_x - min_x), 2.0 / (max_y - min_y), 1.0) *
+        cgmath::Matrix4::from_translation(cgmath::Vector3::new(-(min_x + max_x) / 2.0, -(min_y + max_y) / 2.0, 0.0));
+
       let uniforms = uniform! {
-        transform: cgmath::conv::array4x4(*transform),
+        transform: cgmath::conv::array4x4(transform),
       };
 
       glium::Surface::draw(

@@ -117,9 +117,5 @@ fn new() -> grammar::T<TextureId> {
 
 pub fn main() {
   use cgmath::*;
-  let transform =
-    Matrix4::from_translation(Vector3::new(-0.8, -0.8, 0.0)) *
-    Matrix4::from(<Quaternion<f32> as Rotation3<f32>>::from_angle_z(Rad::from(deg(-25.0)))) *
-    Matrix4::from_scale(0.3);
-  support::main(&transform, new())
+  support::main(new())
 }

@@ -111,8 +111,5 @@ fn new() -> grammar::T<TextureId> {
 }
 
 pub fn main() {
-  let transform =
-    cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, -1.0, 0.0)) *
-    cgmath::Matrix4::from_scale(0.4);
-  support::main(&transform, new())
+  support::main(new())
 }
