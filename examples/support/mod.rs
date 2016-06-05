@@ -10,6 +10,8 @@ use lsystems::word;
 use rand;
 use std;
 
+use self::prelude::*;
+
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 800;
 
@@ -29,6 +31,7 @@ pub fn main<Texture: self::Texture>(mut t: grammar::T<Texture>) {
   let mut rng: rand::XorShiftRng = rand::SeedableRng::from_seed([0x12345678, 0x9abcdef0, 0x13371337, 0x98765432]);
 
   let mut prev = t.clone();
+  let mut prev_fitness = 0.0;
 
   let draw_parameters =
     glium::DrawParameters {
@@ -53,7 +56,7 @@ pub fn main<Texture: self::Texture>(mut t: grammar::T<Texture>) {
     let mut target = window.draw();
     glium::Surface::clear(&mut target, None, Some((1.0, 1.0, 1.0, 1.0)), false, None, None);
 
-    let word = word::generate(&t, 1 << 6, 1 << 18, 0.01, 1000000.0, 1000000.0);
+    let word = word::generate(&t, 1 << 6, 1 << 18, 0.01, 100.0, 1000000.0);
     let vertices = lsystems::render(&word).to_hashmap();
 
     let mut min_x = std::f32::INFINITY;
@@ -96,18 +99,22 @@ pub fn main<Texture: self::Texture>(mut t: grammar::T<Texture>) {
 
     target.finish().unwrap();
 
+    let fitness = fitness(&word, &vertices);
+    if fitness < prev_fitness {
+      t = prev.clone();
+      lsystems::mutate(&mut t, &mut rng);
+    } else {
+      prev = t.clone();
+      prev_fitness = fitness;
+    }
+
     for event in window.poll_events() {
       match event {
         glutin::Event::Closed => return,
         glutin::Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(keycode)) => {
           use glutin::VirtualKeyCode::*;
           match keycode {
-            Down => {
-              t = prev.clone();
-              lsystems::mutate(&mut t, &mut rng);
-            },
-            Up => {
-              prev = t.clone();
+            Space => {
               lsystems::mutate(&mut t, &mut rng);
             },
             _ => {},
@@ -117,4 +124,27 @@ pub fn main<Texture: self::Texture>(mut t: grammar::T<Texture>) {
       }
     }
   }
+}
+
+fn fitness<Texture: self::Texture>(_word: &word::T<Texture>, vertices: &std::collections::HashMap<Texture, Vec<lsystems::vertex::T>>) -> f32 {
+  if vertices.len() == 0 {
+    return 0.0
+  }
+
+  let (width, height) = {
+    let mut vertices = vertices.iter().flat_map(|(_, v)| v.iter());
+    let vertex = vertices.next().unwrap();
+    let mut min = Vector::new(vertex.screen_posn[0], vertex.screen_posn[1]);
+    let mut max = Vector::new(vertex.screen_posn[0], vertex.screen_posn[1]);
+    for vertex in vertices {
+      min.x = min.x.min(vertex.screen_posn[0]);
+      max.x = max.x.max(vertex.screen_posn[0]);
+      min.y = min.y.min(vertex.screen_posn[1]);
+      max.y = max.y.max(vertex.screen_posn[1]);
+    }
+
+    (max.x - min.x, max.y - min.y)
+  };
+
+  width + height
 }
